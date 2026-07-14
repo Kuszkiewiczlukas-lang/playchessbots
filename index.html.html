@@ -1,0 +1,1963 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Schach gegen Napoleon Bot</title>
+<style>
+:root{
+  --bg:#161512;
+  --bg-deep:#0e0d0c;
+  --panel:#262421;
+  --panel-alt:#302e2b;
+  --panel-border:#3d3a35;
+  --board-light:#eeeed2;
+  --board-dark:#769656;
+  --accent:#81b64c;
+  --accent-hover:#a3d16c;
+  --accent-dark:#5a8f37;
+  --text:#e9e8e6;
+  --text-dim:#b3aea3;
+  --text-faint:#7c7a76;
+  --white-piece:#f7f7f4;
+  --black-piece:#2b2a28;
+  --danger:#e05a52;
+  --premove:#8c5cf0;
+  --brilliant:#26c2a3;
+  --great:#5c9bd6;
+  --best:#81b64c;
+  --book:#b58863;
+  --inaccuracy:#f0c94a;
+  --mistake:#ff9f45;
+  --blunder:#fa5a4e;
+}
+*{box-sizing:border-box;}
+html,body{
+  margin:0;padding:0;min-height:100%;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  background:var(--bg);
+  color:var(--text);
+}
+.screen{
+  display:none;
+  min-height:100vh;width:100%;
+  align-items:center;justify-content:center;flex-direction:column;
+  padding:24px;
+}
+.screen.active{display:flex;}
+
+/* ---------- Menu ---------- */
+.menu-card{
+  background:var(--panel);
+  border:1px solid var(--panel-border);
+  border-radius:10px;
+  padding:32px 36px;
+  max-width:460px;width:100%;
+  box-shadow:0 20px 50px rgba(0,0,0,.5);
+}
+.brand{
+  text-align:center;font-size:26px;font-weight:800;margin:0 0 4px 0;color:var(--text);
+  letter-spacing:.2px;
+}
+.brand span{color:var(--accent);}
+.brand-sub{text-align:center;color:var(--text-dim);font-size:13px;margin-bottom:22px;}
+.player-elo-display{
+  text-align:center;background:var(--panel-alt);border:1px solid var(--panel-border);
+  border-radius:8px;padding:10px;margin-bottom:22px;font-size:14px;color:var(--text-dim);
+}
+.player-elo-display b{color:var(--accent);font-size:17px;}
+.setup-section{margin-bottom:22px;}
+.setup-label{
+  display:flex;justify-content:space-between;align-items:baseline;
+  font-size:13px;color:var(--text-dim);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;
+}
+.setup-label b{color:var(--text);font-size:16px;text-transform:none;letter-spacing:0;}
+.setup-label .bot-title-tag{color:var(--accent);font-weight:600;text-transform:none;letter-spacing:0;font-size:13px;}
+input[type=range]{
+  -webkit-appearance:none;width:100%;height:8px;border-radius:5px;
+  background:linear-gradient(90deg, var(--accent), var(--accent) var(--fill,50%), var(--panel-border) var(--fill,50%));
+  outline:none;
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:22px;height:22px;border-radius:50%;
+  background:var(--accent);border:3px solid #1c1b19;cursor:pointer;
+  box-shadow:0 2px 6px rgba(0,0,0,.5);
+}
+input[type=range]::-moz-range-thumb{
+  width:22px;height:22px;border-radius:50%;background:var(--accent);border:3px solid #1c1b19;cursor:pointer;
+}
+.elo-scale{display:flex;justify-content:space-between;font-size:11px;color:var(--text-faint);margin-top:4px;}
+.time-options{display:flex;flex-wrap:wrap;gap:8px;}
+.time-btn{
+  flex:1;min-width:64px;
+  background:var(--panel-alt);border:1px solid var(--panel-border);color:var(--text-dim);
+  padding:10px 6px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;
+  transition:background .15s ease, border-color .15s ease, color .15s ease;
+}
+.time-btn:hover{border-color:var(--accent);color:var(--text);}
+.time-btn.selected{background:var(--accent);border-color:var(--accent);color:#12220a;}
+.btn-start{
+  width:100%;padding:14px;border:none;border-radius:8px;
+  background:var(--accent);color:#12220a;font-size:16px;font-weight:800;
+  cursor:pointer;letter-spacing:.3px;margin-top:4px;
+  transition:background .15s ease;
+}
+.btn-start:hover{background:var(--accent-hover);}
+.sound-toggle-row{display:flex;justify-content:center;margin-top:16px;}
+.sound-toggle{
+  background:transparent;border:1px solid var(--panel-border);color:var(--text-dim);
+  padding:7px 14px;border-radius:20px;cursor:pointer;font-size:12px;
+}
+.sound-toggle:hover{border-color:var(--accent);color:var(--text);}
+
+/* ---------- Game screen ---------- */
+#game-screen{padding:14px;}
+.game-wrap{width:100%;max-width:1100px;display:flex;flex-direction:column;align-items:center;gap:10px;}
+.top-bar{width:100%;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;}
+.menu-link-btn{
+  font-size:13px;font-weight:600;color:var(--text-dim);
+  background:var(--panel);border:1px solid var(--panel-border);padding:8px 14px;border-radius:6px;
+  cursor:pointer;
+}
+.menu-link-btn:hover{color:var(--text);border-color:var(--accent);}
+.turn-banner{
+  font-size:14px;font-weight:700;letter-spacing:.2px;
+  color:#12220a;background:var(--accent);
+  padding:8px 20px;border-radius:20px;min-width:220px;text-align:center;
+  transition:background .25s ease, color .25s ease;
+}
+.turn-banner.bot-turn{background:var(--panel-alt);color:var(--text);}
+.turn-banner.analysis-turn{background:var(--panel-alt);color:var(--accent);}
+.top-spacer{width:74px;}
+
+.game-layout{width:100%;display:flex;align-items:flex-start;gap:16px;justify-content:center;flex-wrap:wrap;}
+
+.board-frame{
+  padding:0;background:transparent;position:relative;flex:none;
+  border-radius:4px;overflow:visible;
+  box-shadow:0 20px 45px rgba(0,0,0,.5);
+}
+#board{
+  position:relative;
+  width:min(88vw,700px);height:min(88vw,700px);
+  display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(8,1fr);
+  border-radius:4px;overflow:hidden;
+}
+.square{position:relative;}
+.square.light{background:var(--board-light);}
+.square.dark{background:var(--board-dark);}
+.square.selected{box-shadow:inset 0 0 0 999px rgba(255,255,0,.35);}
+.square.last-move{box-shadow:inset 0 0 0 999px rgba(255,215,0,.28);}
+.square.in-check{box-shadow:inset 0 0 0 999px rgba(224,74,66,.6);}
+.square.premove-from{box-shadow:inset 0 0 0 999px rgba(140,92,240,.4);}
+.square.premove-to{box-shadow:inset 0 0 0 999px rgba(140,92,240,.55);}
+.square.hoverable:hover{box-shadow:inset 0 0 0 999px rgba(255,255,255,.08);}
+.dot-marker{
+  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  width:30%;height:30%;border-radius:50%;background:rgba(0,0,0,.18);pointer-events:none;
+}
+.dot-marker.capture{
+  width:86%;height:86%;background:transparent;border:5px solid rgba(0,0,0,.2);border-radius:50%;box-sizing:border-box;
+}
+.coord-label{position:absolute;font-size:9px;font-weight:700;opacity:.55;pointer-events:none;}
+.square.light .coord-label{color:var(--board-dark);}
+.square.dark .coord-label{color:var(--board-light);}
+.file-label{bottom:1px;right:3px;}
+.rank-label{top:1px;left:3px;}
+
+.piece{
+  position:absolute;width:12.5%;height:12.5%;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;user-select:none;z-index:3;
+  transition:left .18s cubic-bezier(.4,.1,.3,1), top .18s cubic-bezier(.4,.1,.3,1);
+}
+.piece img{width:88%;height:88%;display:block;pointer-events:none;filter:drop-shadow(0 2px 3px rgba(0,0,0,.45));}
+.piece.selectable:hover{transform:scale(1.08);}
+
+#promo-popover{
+  position:absolute;display:none;flex-direction:column;width:12.5%;z-index:30;
+  background:var(--panel);border:1px solid var(--panel-border);border-radius:6px;
+  box-shadow:0 12px 30px rgba(0,0,0,.6);overflow:hidden;
+}
+#promo-popover.active{display:flex;}
+#promo-popover .promo-choice{
+  width:100%;aspect-ratio:1/1;padding:10%;box-sizing:border-box;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;
+  background:var(--panel-alt);border-bottom:1px solid var(--panel-border);
+}
+#promo-popover .promo-choice img{width:100%;height:100%;display:block;filter:drop-shadow(0 2px 3px rgba(0,0,0,.4));}
+#promo-popover .promo-choice:last-child{border-bottom:none;}
+#promo-popover .promo-choice:hover{background:var(--accent);}
+#promo-popover .promo-cancel{
+  width:100%;aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;
+  background:rgba(0,0,0,.3);cursor:pointer;font-size:16px;color:var(--text-dim);
+}
+#promo-popover .promo-cancel:hover{background:rgba(224,74,66,.5);color:#fff;}
+
+/* ---------- Sidebar ---------- */
+.sidebar{width:300px;max-width:100%;display:flex;flex-direction:column;gap:8px;}
+.player-card{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  background:var(--panel);border:1px solid var(--panel-border);border-radius:8px;padding:9px 12px;
+}
+.player-card .who{display:flex;align-items:center;gap:9px;min-width:0;}
+.avatar{
+  width:34px;height:34px;border-radius:6px;display:flex;align-items:center;justify-content:center;
+  font-weight:800;font-size:15px;flex:none;
+}
+.bot-avatar{background:var(--panel-alt);color:var(--danger);border:1px solid var(--panel-border);}
+.player-avatar{background:var(--accent);color:#12220a;}
+.name-block{min-width:0;}
+.name-block .name{font-size:13.5px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.name-block .elo-badge{font-size:11.5px;color:var(--text-dim);font-weight:600;}
+.clock{
+  font-variant-numeric:tabular-nums;font-size:19px;font-weight:800;
+  background:var(--panel-alt);border:1px solid var(--panel-border);border-radius:6px;
+  padding:6px 12px;color:var(--text);min-width:78px;text-align:center;
+}
+.clock.active{background:var(--accent);color:#12220a;border-color:var(--accent);}
+.clock.low{background:var(--danger);color:#fff;border-color:var(--danger);}
+
+.captured-row{
+  display:flex;flex-wrap:wrap;align-items:center;gap:0px;min-height:14px;padding:0 4px;
+  font-size:14px;line-height:1;color:var(--text-dim);
+}
+.captured-row .cap-piece{margin-right:-4px;}
+.material-diff{font-size:12px;color:var(--text-dim);margin-left:6px;font-weight:700;}
+
+.movelist-panel{
+  background:var(--panel);border:1px solid var(--panel-border);border-radius:8px;
+  height:150px;overflow-y:auto;padding:1px 0;
+}
+.movelist-panel::-webkit-scrollbar{width:6px;}
+.movelist-panel::-webkit-scrollbar-thumb{background:var(--panel-border);border-radius:4px;}
+.movelist-empty{text-align:center;color:var(--text-faint);font-size:11px;padding:12px 8px;}
+.movelist-table{width:100%;border-collapse:collapse;font-size:11px;}
+.movelist-table tr:nth-child(odd){background:rgba(255,255,255,.02);}
+.movelist-table td{padding:2px 5px;}
+.movelist-table td.num{font-size:10px;color:var(--text-faint);width:20px;text-align:right;}
+.movelist-table td.mv{cursor:pointer;border-radius:4px;color:var(--text);white-space:nowrap;}
+.movelist-table td.mv:hover{background:rgba(129,182,76,.18);}
+.movelist-table td.mv.active-move{background:var(--accent);color:#12220a;font-weight:700;}
+.move-tag{font-weight:800;margin-left:2px;font-size:10px;}
+
+.analysis-controls{
+  display:none;gap:8px;justify-content:center;
+  background:var(--panel);border:1px solid var(--panel-border);border-radius:8px;padding:8px;
+}
+.analysis-controls.active{display:flex;}
+.an-btn{
+  font-size:15px;color:var(--text);background:var(--panel-alt);border:1px solid var(--panel-border);
+  border-radius:5px;width:42px;height:34px;cursor:pointer;
+}
+.an-btn:hover{border-color:var(--accent);}
+.an-btn:disabled{opacity:.35;cursor:default;}
+.analysis-hint{text-align:center;font-size:12px;color:var(--text-dim);}
+.analysis-classification{
+  text-align:center;font-size:13px;font-weight:700;padding:6px;border-radius:6px;
+  background:var(--panel);border:1px solid var(--panel-border);
+}
+.back-to-result-row{display:flex;justify-content:center;}
+.btn-tiny{
+  font-size:12px;font-weight:700;letter-spacing:.2px;
+  padding:9px 16px;border-radius:6px;border:none;cursor:pointer;
+  background:var(--panel-alt);color:var(--text);
+}
+.btn-tiny:hover{background:var(--panel-border);}
+
+/* end screen */
+#end-screen .menu-card{text-align:center;}
+.result-text{font-size:clamp(28px,6vw,42px);font-weight:800;margin:4px 0 2px 0;}
+.result-text.win{color:var(--accent);}
+.result-text.lose{color:var(--danger);}
+.result-text.draw{color:var(--text-dim);}
+.flavor-text{font-style:italic;font-size:15px;color:var(--text-dim);margin-bottom:14px;}
+.elo-change-box{
+  background:var(--panel-alt);border:1px solid var(--panel-border);border-radius:8px;
+  padding:12px;margin-bottom:22px;font-size:14px;color:var(--text-dim);
+}
+.elo-change-box b{font-size:20px;color:var(--text);}
+.elo-change-box .delta-pos{color:var(--accent);font-weight:800;}
+.elo-change-box .delta-neg{color:var(--danger);font-weight:800;}
+.end-buttons{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;}
+.btn-classic{
+  font-size:13.5px;font-weight:700;letter-spacing:.2px;
+  padding:12px 22px;border-radius:8px;border:none;cursor:pointer;
+}
+.btn-primary{background:var(--accent);color:#12220a;}
+.btn-primary:hover{background:var(--accent-hover);}
+.btn-secondary{background:var(--panel-alt);color:var(--text);border:1px solid var(--panel-border) !important;}
+.btn-secondary:hover{border-color:var(--accent) !important;}
+.btn-tertiary{background:transparent;color:var(--text-dim);border:1px solid var(--panel-border) !important;}
+.btn-tertiary:hover{color:var(--text);border-color:var(--accent) !important;}
+
+@media (max-width:900px){
+  .sidebar{width:100%;max-width:540px;}
+  .movelist-panel{height:110px;}
+  .top-spacer{display:none;}
+}
+
+#confetti-canvas{
+  position:fixed;inset:0;width:100vw;height:100vh;
+  pointer-events:none;z-index:9999;display:block;
+}
+</style>
+</head>
+<body>
+
+<canvas id="confetti-canvas"></canvas>
+
+<!-- ============ MENU SCREEN ============ -->
+<div id="menu-screen" class="screen active">
+  <div class="menu-card">
+    <h1 class="brand">Schach gegen <span>Napoleon Bot</span></h1>
+    <div class="brand-sub">Stelle deinen Gegner ein und beginne die Partie</div>
+
+    <div class="player-elo-display">Deine Elo: <b id="menu-player-elo">800</b></div>
+
+    <div class="setup-section">
+      <div class="setup-label"><span>Gegner-Stärke</span><span><b id="bot-elo-value">1000</b> Elo &middot; <span class="bot-title-tag" id="bot-title-tag">Amateur</span></span></div>
+      <input type="range" id="elo-slider" min="100" max="3200" step="10" value="1000">
+      <div class="elo-scale"><span>100</span><span>3200</span></div>
+    </div>
+
+    <div class="setup-section">
+      <div class="setup-label"><span>Bedenkzeit</span></div>
+      <div class="time-options" id="time-options">
+        <button class="time-btn" data-min="1">1 Min</button>
+        <button class="time-btn" data-min="3">3 Min</button>
+        <button class="time-btn selected" data-min="5">5 Min</button>
+        <button class="time-btn" data-min="10">10 Min</button>
+        <button class="time-btn" data-min="30">30 Min</button>
+        <button class="time-btn" data-min="0">Kein Limit</button>
+      </div>
+    </div>
+
+    <button class="btn-start" id="start-btn">Partie beginnen</button>
+    <div class="sound-toggle-row">
+      <button class="sound-toggle" id="sound-toggle-btn">&#128266; Klang: An</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ GAME SCREEN ============ -->
+<div id="game-screen" class="screen">
+  <div class="game-wrap">
+    <div class="top-bar">
+      <button class="menu-link-btn" id="back-to-menu-btn">&larr; Menü</button>
+      <div id="turn-banner" class="turn-banner">Du bist am Zug</div>
+      <div class="top-spacer"></div>
+    </div>
+    <div class="game-layout">
+      <div class="board-frame">
+        <div id="board"></div>
+        <div id="promo-popover"></div>
+      </div>
+      <div class="sidebar">
+        <div class="player-card" id="bot-card">
+          <div class="who">
+            <div class="avatar bot-avatar">N</div>
+            <div class="name-block">
+              <div class="name">Napoleon Bot</div>
+              <div class="elo-badge" id="bot-elo-badge">1000 Elo</div>
+            </div>
+          </div>
+          <div class="clock" id="bot-clock">5:00</div>
+        </div>
+        <div class="captured-row" id="captured-by-blue"></div>
+
+        <div class="movelist-panel" id="movelist-panel">
+          <div class="movelist-empty" id="movelist-empty">Die Züge der Partie erscheinen hier...</div>
+          <table class="movelist-table" id="movelist-table" style="display:none;"><tbody></tbody></table>
+        </div>
+
+        <div class="analysis-controls" id="analysis-controls">
+          <button class="an-btn" id="an-start" title="Zum Anfang">&#124;&laquo;</button>
+          <button class="an-btn" id="an-prev" title="Zurück">&laquo;</button>
+          <button class="an-btn" id="an-next" title="Vor">&raquo;</button>
+          <button class="an-btn" id="an-end" title="Zum Ende">&raquo;&#124;</button>
+        </div>
+        <div class="analysis-classification" id="analysis-classification" style="display:none;"></div>
+        <div class="analysis-hint" id="analysis-hint" style="display:none;">Analyse &middot; Zug <span id="an-index">0</span> / <span id="an-total">0</span></div>
+        <div class="back-to-result-row" id="back-to-result-row" style="display:none;">
+          <button class="btn-tiny" id="back-to-result-btn">Zurück zum Ergebnis</button>
+        </div>
+
+        <div class="captured-row" id="captured-by-red"></div>
+        <div class="player-card" id="player-card">
+          <div class="who">
+            <div class="avatar player-avatar">D</div>
+            <div class="name-block">
+              <div class="name">Du</div>
+              <div class="elo-badge" id="player-elo-badge">800 Elo</div>
+            </div>
+          </div>
+          <div class="clock" id="player-clock">5:00</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ END SCREEN ============ -->
+<div id="end-screen" class="screen">
+  <div class="menu-card">
+    <div id="result-text" class="result-text">Sieg!</div>
+    <div id="flavor-text" class="flavor-text">"Der Kaiser verneigt sich..."</div>
+    <div class="elo-change-box" id="elo-change-box">
+      Neue Elo: <b id="new-elo-value">800</b> (<span id="elo-delta">+0</span>)
+    </div>
+    <div class="end-buttons">
+      <button class="btn-classic btn-primary" id="rematch-btn">Neue Partie</button>
+      <button class="btn-classic btn-tertiary" id="analyze-btn">Partie analysieren</button>
+      <button class="btn-classic btn-secondary" id="end-to-menu-btn">Hauptmenü</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ============================================================
+   KONSTANTEN & HILFSFUNKTIONEN
+   ============================================================ */
+const PIECE_GLYPH = { p:'\u265F', n:'\u265E', b:'\u265D', r:'\u265C', q:'\u265B', k:'\u265A' };
+// Saubere, klassische Wikimedia-Commons-Vektorgrafiken (Standard-Schachsatz)
+const PIECE_IMG = {
+  blue: { // weiße Figuren (Spieler)
+    p:'https://upload.wikimedia.org/wikipedia/commons/4/45/Chess_plt45.svg',
+    n:'https://upload.wikimedia.org/wikipedia/commons/7/70/Chess_nlt45.svg',
+    b:'https://upload.wikimedia.org/wikipedia/commons/b/b1/Chess_blt45.svg',
+    r:'https://upload.wikimedia.org/wikipedia/commons/7/72/Chess_rlt45.svg',
+    q:'https://upload.wikimedia.org/wikipedia/commons/1/15/Chess_qlt45.svg',
+    k:'https://upload.wikimedia.org/wikipedia/commons/4/42/Chess_klt45.svg'
+  },
+  red: { // schwarze Figuren (Napoleon-Bot)
+    p:'https://upload.wikimedia.org/wikipedia/commons/c/c7/Chess_pdt45.svg',
+    n:'https://upload.wikimedia.org/wikipedia/commons/e/ef/Chess_ndt45.svg',
+    b:'https://upload.wikimedia.org/wikipedia/commons/9/98/Chess_bdt45.svg',
+    r:'https://upload.wikimedia.org/wikipedia/commons/f/ff/Chess_rdt45.svg',
+    q:'https://upload.wikimedia.org/wikipedia/commons/4/47/Chess_qdt45.svg',
+    k:'https://upload.wikimedia.org/wikipedia/commons/f/f0/Chess_kdt45.svg'
+  }
+};
+const PIECE_NAME = { p:'Bauer', n:'Springer', b:'Läufer', r:'Turm', q:'Dame', k:'König' };
+function pieceImgHTML(color, type){
+  const label = (color==='blue' ? 'Weißer ' : 'Schwarzer ') + PIECE_NAME[type];
+  return '<img src="'+PIECE_IMG[color][type]+'" alt="'+label+'" draggable="false">';
+}
+const PIECE_VALUE = { p:100, n:320, b:330, r:500, q:900, k:20000 };
+const SAN_LETTER = { p:'', n:'N', b:'B', r:'R', q:'Q', k:'K' };
+
+const PST = {
+  p:[[0,0,0,0,0,0,0,0],[50,50,50,50,50,50,50,50],[10,10,20,30,30,20,10,10],
+     [5,5,10,25,25,10,5,5],[0,0,0,20,20,0,0,0],[5,-5,-10,0,0,-10,-5,5],
+     [5,10,10,-20,-20,10,10,5],[0,0,0,0,0,0,0,0]],
+  n:[[-50,-40,-30,-30,-30,-30,-40,-50],[-40,-20,0,0,0,0,-20,-40],
+     [-30,0,10,15,15,10,0,-30],[-30,5,15,20,20,15,5,-30],
+     [-30,0,15,20,20,15,0,-30],[-30,5,10,15,15,10,5,-30],
+     [-40,-20,0,5,5,0,-20,-40],[-50,-40,-30,-30,-30,-30,-40,-50]],
+  b:[[-20,-10,-10,-10,-10,-10,-10,-20],[-10,0,0,0,0,0,0,-10],
+     [-10,0,5,10,10,5,0,-10],[-10,5,5,10,10,5,5,-10],
+     [-10,0,10,10,10,10,0,-10],[-10,10,10,10,10,10,10,-10],
+     [-10,5,0,0,0,0,5,-10],[-20,-10,-10,-10,-10,-10,-10,-20]],
+  r:[[0,0,0,0,0,0,0,0],[5,10,10,10,10,10,10,5],
+     [-5,0,0,0,0,0,0,-5],[-5,0,0,0,0,0,0,-5],
+     [-5,0,0,0,0,0,0,-5],[-5,0,0,0,0,0,0,-5],
+     [-5,0,0,0,0,0,0,-5],[0,0,0,5,5,0,0,0]],
+  q:[[-20,-10,-10,-5,-5,-10,-10,-20],[-10,0,0,0,0,0,0,-10],
+     [-10,0,5,5,5,5,0,-10],[-5,0,5,5,5,5,0,-5],
+     [0,0,5,5,5,5,0,-5],[-10,5,5,5,5,5,0,-10],[-10,0,5,0,0,0,0,-10],
+     [-20,-10,-10,-5,-5,-10,-10,-20]],
+  k:[[-30,-40,-40,-50,-50,-40,-40,-30],[-30,-40,-40,-50,-50,-40,-40,-30],
+     [-30,-40,-40,-50,-50,-40,-40,-30],[-30,-40,-40,-50,-50,-40,-40,-30],
+     [-20,-30,-30,-40,-40,-30,-30,-20],[-10,-20,-20,-20,-20,-20,-20,-10],
+     [20,20,0,0,0,0,20,20],[20,30,10,0,0,10,30,20]]
+};
+
+function inside(r,c){ return r>=0 && r<8 && c>=0 && c<8; }
+function opposite(color){ return color==='blue' ? 'red' : 'blue'; }
+function cloneBoard(board){
+  return board.map(row => row.map(p => p ? Object.assign({},p) : null));
+}
+function fileChar(c){ return 'abcdefgh'[c]; }
+function rankChar(r){ return String(8-r); }
+
+/* ============================================================
+   TONEFFEKTE (Web Audio, keine externen Dateien nötig)
+   ============================================================ */
+let soundEnabled = true;
+let audioCtx = null;
+function ensureAudioCtx(){
+  if(!audioCtx){
+    try{ audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+    catch(e){ audioCtx = null; }
+  }
+  return audioCtx;
+}
+function beep(freq, duration, type, gainStart){
+  if(!soundEnabled) return;
+  const ctx = ensureAudioCtx();
+  if(!ctx) return;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = type || 'sine';
+  osc.frequency.value = freq;
+  gain.gain.value = gainStart!==undefined ? gainStart : 0.09;
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  const now = ctx.currentTime;
+  gain.gain.setValueAtTime(gain.gain.value, now);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+  osc.start(now);
+  osc.stop(now + duration + 0.02);
+}
+function playMoveSound(){ beep(420, 0.10, 'triangle', 0.08); }
+function playCaptureSound(){ beep(220, 0.16, 'sawtooth', 0.09); setTimeout(()=>beep(160,0.14,'sawtooth',0.07), 40); }
+function playCheckSound(){ beep(660, 0.14, 'square', 0.07); setTimeout(()=>beep(880,0.16,'square',0.06), 90); }
+function playGameEndSound(win){
+  if(win){ [523,659,784,1046].forEach((f,i)=>setTimeout(()=>beep(f,0.22,'triangle',0.08), i*110)); }
+  else { [392,349,294].forEach((f,i)=>setTimeout(()=>beep(f,0.28,'sawtooth',0.07), i*140)); }
+}
+function playTickSound(){ beep(880, 0.05, 'square', 0.03); }
+
+/* ============================================================
+   SPIELZUSTAND
+   ============================================================ */
+function createInitialBoard(){
+  const board = Array.from({length:8}, ()=>Array(8).fill(null));
+  const backRank = ['r','n','b','q','k','b','n','r'];
+  for(let c=0;c<8;c++){
+    board[0][c] = { type:backRank[c], color:'red' };
+    board[1][c] = { type:'p', color:'red' };
+    board[6][c] = { type:'p', color:'blue' };
+    board[7][c] = { type:backRank[c], color:'blue' };
+  }
+  return board;
+}
+
+function newGame(botElo){
+  return {
+    board: createInitialBoard(),
+    turn: 'blue',
+    botElo: botElo,
+    castling: { blueK:true, blueQ:true, redK:true, redQ:true },
+    enPassant: null,
+    halfmoveClock: 0,
+    lastMove: null,
+    capturedByBlue: [],
+    capturedByRed: [],
+    gameOver: false,
+    clockBlue: null,
+    clockRed: null
+  };
+}
+
+let game = null;
+let selectedSquare = null;
+let legalTargets = [];
+let uiLocked = false;
+let premove = null;
+
+let snapshots = [];
+let positionCounts = {};
+
+let analysisMode = false;
+let analysisIndex = 0;
+let classifications = [];
+
+let timeControlMinutes = 5;
+
+/* ============================================================
+   ELO-SYSTEM (persistiert in localStorage)
+   ============================================================ */
+const ELO_STORAGE_KEY = 'napoleonChessPlayerElo';
+function loadPlayerElo(){
+  const raw = localStorage.getItem(ELO_STORAGE_KEY);
+  const val = raw ? parseInt(raw,10) : 800;
+  return (isFinite(val) && val>0) ? val : 800;
+}
+function savePlayerElo(elo){
+  localStorage.setItem(ELO_STORAGE_KEY, String(Math.round(elo)));
+}
+let playerElo = loadPlayerElo();
+
+function getBotTitle(elo){
+  if(elo<500) return 'Rekrut';
+  if(elo<900) return 'Anfänger';
+  if(elo<1300) return 'Klubspieler';
+  if(elo<1700) return 'Experte';
+  if(elo<2100) return 'Meister';
+  if(elo<2600) return 'Internationaler Meister';
+  return 'Großmeister';
+}
+
+function computeEloUpdate(pElo, bElo, score){
+  const K = 40;
+  const expected = 1/(1+Math.pow(10,(bElo-pElo)/400));
+  const delta = Math.round(K*(score-expected));
+  const newElo = Math.max(100, pElo+delta);
+  return {newElo, delta: newElo-pElo};
+}
+
+/* ============================================================
+   ZUGGENERIERUNG (pseudo-legal)
+   ============================================================ */
+function pawnDir(color){ return color==='blue' ? -1 : 1; }
+function startRow(color){ return color==='blue' ? 6 : 1; }
+function promotionRow(color){ return color==='blue' ? 0 : 7; }
+
+function generatePieceMoves(board, r, c, state){
+  const piece = board[r][c];
+  if(!piece) return [];
+  const moves = [];
+  const color = piece.color;
+  const enemy = opposite(color);
+
+  function addIfOk(tr,tc,opts){
+    if(!inside(tr,tc)) return;
+    const target = board[tr][tc];
+    if(target && target.color===color) return;
+    moves.push(Object.assign({from:{r,c}, to:{r:tr,c:tc}, piece:piece.type, color, captured: target?target.type:null}, opts||{}));
+  }
+
+  if(piece.type==='p'){
+    const dir = pawnDir(color);
+    const one = r+dir;
+    if(inside(one,c) && !board[one][c]){
+      if(one===promotionRow(color)){
+        ['q','r','b','n'].forEach(pt=>moves.push({from:{r,c},to:{r:one,c},piece:'p',color,captured:null,promotion:pt}));
+      } else {
+        moves.push({from:{r,c},to:{r:one,c},piece:'p',color,captured:null});
+        const two = r+2*dir;
+        if(r===startRow(color) && !board[two][c]){
+          moves.push({from:{r,c},to:{r:two,c},piece:'p',color,captured:null,twoSquare:true});
+        }
+      }
+    }
+    for(const dc of [-1,1]){
+      const tr=r+dir, tc=c+dc;
+      if(!inside(tr,tc)) continue;
+      const target = board[tr][tc];
+      if(target && target.color===enemy){
+        if(tr===promotionRow(color)){
+          ['q','r','b','n'].forEach(pt=>moves.push({from:{r,c},to:{r:tr,c:tc},piece:'p',color,captured:target.type,promotion:pt}));
+        } else {
+          moves.push({from:{r,c},to:{r:tr,c:tc},piece:'p',color,captured:target.type});
+        }
+      } else if(state.enPassant && state.enPassant.r===tr && state.enPassant.c===tc){
+        moves.push({from:{r,c},to:{r:tr,c:tc},piece:'p',color,captured:'p',enPassant:true});
+      }
+    }
+  } else if(piece.type==='n'){
+    const offs = [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]];
+    for(const [dr,dc] of offs) addIfOk(r+dr,c+dc);
+  } else if(piece.type==='k'){
+    for(let dr=-1;dr<=1;dr++) for(let dc=-1;dc<=1;dc++){
+      if(dr===0 && dc===0) continue;
+      addIfOk(r+dr,c+dc);
+    }
+    const rights = state.castling;
+    const homeRow = color==='blue' ? 7 : 0;
+    if(r===homeRow && c===4 && !isInCheck(board,color)){
+      const kingside = color==='blue' ? rights.blueK : rights.redK;
+      const queenside = color==='blue' ? rights.blueQ : rights.redQ;
+      if(kingside && !board[homeRow][5] && !board[homeRow][6] && board[homeRow][7] && board[homeRow][7].type==='r' && board[homeRow][7].color===color){
+        if(!isSquareAttacked(board,homeRow,5,opposite(color)) && !isSquareAttacked(board,homeRow,6,opposite(color))){
+          moves.push({from:{r,c},to:{r:homeRow,c:6},piece:'k',color,captured:null,castle:'K'});
+        }
+      }
+      if(queenside && !board[homeRow][1] && !board[homeRow][2] && !board[homeRow][3] && board[homeRow][0] && board[homeRow][0].type==='r' && board[homeRow][0].color===color){
+        if(!isSquareAttacked(board,homeRow,3,opposite(color)) && !isSquareAttacked(board,homeRow,2,opposite(color))){
+          moves.push({from:{r,c},to:{r:homeRow,c:2},piece:'k',color,captured:null,castle:'Q'});
+        }
+      }
+    }
+  } else {
+    let dirs = [];
+    if(piece.type==='b') dirs=[[-1,-1],[-1,1],[1,-1],[1,1]];
+    else if(piece.type==='r') dirs=[[-1,0],[1,0],[0,-1],[0,1]];
+    else if(piece.type==='q') dirs=[[-1,-1],[-1,1],[1,-1],[1,1],[-1,0],[1,0],[0,-1],[0,1]];
+    for(const [dr,dc] of dirs){
+      let tr=r+dr, tc=c+dc;
+      while(inside(tr,tc)){
+        const target=board[tr][tc];
+        if(!target){ moves.push({from:{r,c},to:{r:tr,c:tc},piece:piece.type,color,captured:null}); }
+        else { if(target.color!==color) moves.push({from:{r,c},to:{r:tr,c:tc},piece:piece.type,color,captured:target.type}); break; }
+        tr+=dr; tc+=dc;
+      }
+    }
+  }
+  return moves;
+}
+
+function generateAllMoves(board, color, state){
+  let all = [];
+  for(let r=0;r<8;r++) for(let c=0;c<8;c++){
+    const p = board[r][c];
+    if(p && p.color===color) all = all.concat(generatePieceMoves(board,r,c,state));
+  }
+  return all;
+}
+
+function isSquareAttacked(board, r, c, byColor){
+  const dir = byColor==='blue' ? -1 : 1;
+  for(const dc of [-1,1]){
+    const pr=r-dir, pc=c-dc;
+    if(inside(pr,pc)){
+      const p = board[pr][pc];
+      if(p && p.color===byColor && p.type==='p') return true;
+    }
+  }
+  const nOffs=[[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]];
+  for(const [dr,dc] of nOffs){
+    const tr=r+dr, tc=c+dc;
+    if(inside(tr,tc)){
+      const p=board[tr][tc];
+      if(p && p.color===byColor && p.type==='n') return true;
+    }
+  }
+  for(let dr=-1;dr<=1;dr++) for(let dc=-1;dc<=1;dc++){
+    if(dr===0&&dc===0) continue;
+    const tr=r+dr,tc=c+dc;
+    if(inside(tr,tc)){
+      const p=board[tr][tc];
+      if(p && p.color===byColor && p.type==='k') return true;
+    }
+  }
+  const diagDirs=[[-1,-1],[-1,1],[1,-1],[1,1]];
+  for(const [dr,dc] of diagDirs){
+    let tr=r+dr,tc=c+dc;
+    while(inside(tr,tc)){
+      const p=board[tr][tc];
+      if(p){ if(p.color===byColor && (p.type==='b'||p.type==='q')) return true; break; }
+      tr+=dr; tc+=dc;
+    }
+  }
+  const orthoDirs=[[-1,0],[1,0],[0,-1],[0,1]];
+  for(const [dr,dc] of orthoDirs){
+    let tr=r+dr,tc=c+dc;
+    while(inside(tr,tc)){
+      const p=board[tr][tc];
+      if(p){ if(p.color===byColor && (p.type==='r'||p.type==='q')) return true; break; }
+      tr+=dr; tc+=dc;
+    }
+  }
+  return false;
+}
+
+function findKing(board, color){
+  for(let r=0;r<8;r++) for(let c=0;c<8;c++){
+    const p=board[r][c];
+    if(p && p.color===color && p.type==='k') return {r,c};
+  }
+  return null;
+}
+
+function isInCheck(board, color){
+  const k = findKing(board,color);
+  if(!k) return false;
+  return isSquareAttacked(board,k.r,k.c,opposite(color));
+}
+
+function applyMove(state, move){
+  const ns = {
+    board: cloneBoard(state.board),
+    turn: opposite(state.turn),
+    botElo: state.botElo,
+    castling: Object.assign({}, state.castling),
+    enPassant: null,
+    halfmoveClock: state.halfmoveClock+1,
+    lastMove: move,
+    capturedByBlue: state.capturedByBlue.slice(),
+    capturedByRed: state.capturedByRed.slice(),
+    gameOver:false,
+    clockBlue: state.clockBlue,
+    clockRed: state.clockRed
+  };
+  const board = ns.board;
+  const piece = board[move.from.r][move.from.c];
+  const color = piece.color;
+
+  if(move.captured){
+    if(color==='blue') ns.capturedByBlue.push(move.captured);
+    else ns.capturedByRed.push(move.captured);
+    ns.halfmoveClock = 0;
+  }
+  if(piece.type==='p') ns.halfmoveClock = 0;
+
+  if(move.enPassant){
+    const capRow = color==='blue' ? move.to.r+1 : move.to.r-1;
+    board[capRow][move.to.c] = null;
+  }
+
+  board[move.from.r][move.from.c] = null;
+  let movedPiece = Object.assign({}, piece);
+  if(move.promotion) movedPiece.type = move.promotion;
+  board[move.to.r][move.to.c] = movedPiece;
+
+  if(move.castle==='K'){
+    const homeRow = color==='blue' ? 7 : 0;
+    board[homeRow][5] = board[homeRow][7];
+    board[homeRow][7] = null;
+  } else if(move.castle==='Q'){
+    const homeRow = color==='blue' ? 7 : 0;
+    board[homeRow][3] = board[homeRow][0];
+    board[homeRow][0] = null;
+  }
+
+  if(piece.type==='k'){
+    if(color==='blue'){ ns.castling.blueK=false; ns.castling.blueQ=false; }
+    else { ns.castling.redK=false; ns.castling.redQ=false; }
+  }
+  function revokeRookRight(r,c){
+    if(r===7 && c===0) ns.castling.blueQ=false;
+    if(r===7 && c===7) ns.castling.blueK=false;
+    if(r===0 && c===0) ns.castling.redQ=false;
+    if(r===0 && c===7) ns.castling.redK=false;
+  }
+  if(piece.type==='r') revokeRookRight(move.from.r, move.from.c);
+  if(move.captured==='r') revokeRookRight(move.to.r, move.to.c);
+
+  if(move.twoSquare){
+    const midRow = (move.from.r+move.to.r)/2;
+    ns.enPassant = {r:midRow, c:move.from.c};
+  }
+
+  return ns;
+}
+
+function getLegalMoves(state, color){
+  const pseudo = generateAllMoves(state.board, color, state);
+  const legal = [];
+  for(const m of pseudo){
+    const after = applyMove(state, m);
+    if(!isInCheck(after.board, color)) legal.push(m);
+  }
+  return legal;
+}
+
+function countMaterial(board){
+  let minorCount={blue:0,red:0}, anyMajorOrPawn=false;
+  for(let r=0;r<8;r++) for(let c=0;c<8;c++){
+    const p=board[r][c];
+    if(!p || p.type==='k') continue;
+    if(p.type==='p'||p.type==='q'||p.type==='r') anyMajorOrPawn=true;
+    else minorCount[p.color]++;
+  }
+  return {anyMajorOrPawn, minorCount};
+}
+
+function isInsufficientMaterial(board){
+  const {anyMajorOrPawn, minorCount} = countMaterial(board);
+  if(anyMajorOrPawn) return false;
+  const total = minorCount.blue + minorCount.red;
+  return total <= 1;
+}
+
+function getGameStatus(state){
+  const legal = getLegalMoves(state, state.turn);
+  if(legal.length===0){
+    if(isInCheck(state.board, state.turn)) return {over:true, result: opposite(state.turn)+'_wins_checkmate'};
+    return {over:true, result:'stalemate'};
+  }
+  if(state.halfmoveClock>=100) return {over:true, result:'draw_50move'};
+  if(isInsufficientMaterial(state.board)) return {over:true, result:'draw_material'};
+  return {over:false, legalMoves: legal};
+}
+
+function positionKey(state){
+  let s='';
+  for(let r=0;r<8;r++){
+    for(let c=0;c<8;c++){
+      const p = state.board[r][c];
+      s += p ? (p.color==='blue'?'b':'r')+p.type : '--';
+    }
+  }
+  s += '|'+state.turn;
+  s += '|'+(state.castling.blueK?'1':'0')+(state.castling.blueQ?'1':'0')+(state.castling.redK?'1':'0')+(state.castling.redQ?'1':'0');
+  s += '|'+(state.enPassant ? state.enPassant.r+','+state.enPassant.c : '-');
+  return s;
+}
+function recordPosition(state){
+  const key = positionKey(state);
+  positionCounts[key] = (positionCounts[key]||0)+1;
+  return positionCounts[key];
+}
+
+function computeSAN(preState, move, preLegalMoves){
+  if(move.castle==='K') return 'O-O';
+  if(move.castle==='Q') return 'O-O-O';
+  const letter = SAN_LETTER[move.piece];
+  const capture = !!move.captured;
+  const dest = fileChar(move.to.c) + rankChar(move.to.r);
+  let disambig = '';
+  if(move.piece!=='p'){
+    const others = preLegalMoves.filter(m=>
+      m.piece===move.piece &&
+      m.to.r===move.to.r && m.to.c===move.to.c &&
+      !(m.from.r===move.from.r && m.from.c===move.from.c)
+    );
+    if(others.length>0){
+      const sameFile = others.some(m=>m.from.c===move.from.c);
+      const sameRank = others.some(m=>m.from.r===move.from.r);
+      if(!sameFile) disambig = fileChar(move.from.c);
+      else if(!sameRank) disambig = rankChar(move.from.r);
+      else disambig = fileChar(move.from.c) + rankChar(move.from.r);
+    }
+  } else if(capture){
+    disambig = fileChar(move.from.c);
+  }
+  let san = letter + disambig + (capture ? 'x' : '') + dest;
+  if(move.promotion) san += '=' + SAN_LETTER[move.promotion];
+  return san;
+}
+
+function finalizeSANWithSuffix(san, afterState){
+  const inCheck = isInCheck(afterState.board, afterState.turn);
+  if(!inCheck) return san;
+  const status = getGameStatus(afterState);
+  return san + (status.over ? '#' : '+');
+}
+
+/* ============================================================
+   BEWERTUNG & KI (Elo-basiert, 100 - 3200)
+   ============================================================ */
+function evaluateBoard(board){
+  let score = 0;
+  for(let r=0;r<8;r++) for(let c=0;c<8;c++){
+    const p = board[r][c];
+    if(!p) continue;
+    const base = PIECE_VALUE[p.type];
+    let pstRow = p.color==='blue' ? r : 7-r;
+    const pstVal = PST[p.type][pstRow][c];
+    const val = base + pstVal;
+    score += (p.color==='red') ? val : -val;
+  }
+  return score; // positiv = gut für Rot (Napoleon)
+}
+
+function orderMoves(moves){
+  return moves.slice().sort((a,b)=>{
+    const av = (a.captured?PIECE_VALUE[a.captured]:0) + (a.promotion?800:0);
+    const bv = (b.captured?PIECE_VALUE[b.captured]:0) + (b.promotion?800:0);
+    return bv-av;
+  });
+}
+
+const INF = 1e9;
+
+function minimax(state, depth, alpha, beta, color){
+  const status = getGameStatus(state);
+  if(status.over){
+    if(status.result===opposite(color)+'_wins_checkmate') return (color==='red') ? -INF+(100-depth) : INF-(100-depth);
+    if(status.result===color+'_wins_checkmate') return (color==='red') ? INF-(100-depth) : -INF+(100-depth);
+    return 0;
+  }
+  if(depth===0){
+    return evaluateBoard(state.board);
+  }
+  const moves = orderMoves(status.legalMoves);
+  if(color==='red'){
+    let best = -INF;
+    for(const m of moves){
+      const after = applyMove(state, m);
+      const val = minimax(after, depth-1, alpha, beta, 'blue');
+      if(val>best) best=val;
+      if(best>alpha) alpha=best;
+      if(alpha>=beta) break;
+    }
+    return best;
+  } else {
+    let best = INF;
+    for(const m of moves){
+      const after = applyMove(state, m);
+      const val = minimax(after, depth-1, alpha, beta, 'red');
+      if(val<best) best=val;
+      if(best<beta) beta=best;
+      if(alpha>=beta) break;
+    }
+    return best;
+  }
+}
+
+function getAIParams(elo){
+  const clamped = Math.max(100, Math.min(3200, elo));
+  const t = (clamped-100)/3100; // 0..1
+  let depth;
+  if(clamped<500) depth=1;
+  else if(clamped<1200) depth=2;
+  else depth=3;
+  const blunderChance = Math.max(0, 0.82*(1-t*1.08));
+  const noise = Math.max(0, 170*(1-t*1.05));
+  return {depth, blunderChance, noise};
+}
+
+function chooseAIMove(state){
+  const status = getGameStatus(state);
+  const moves = status.legalMoves;
+  if(moves.length===0) return null;
+  const {depth, blunderChance, noise} = getAIParams(state.botElo);
+
+  if(Math.random() < blunderChance){
+    // Ein Teil der "Fehler" ist rein zufällig, ein Teil eine leicht bevorzugte Schwäche
+    if(Math.random() < 0.55){
+      return moves[Math.floor(Math.random()*moves.length)];
+    }
+    let scored = moves.map(m=>{
+      const after = applyMove(state, m);
+      return {m, v: evaluateBoard(after.board) + (Math.random()*2-1)*noise};
+    });
+    scored.sort((a,b)=>b.v-a.v);
+    const poolSize = Math.max(3, Math.ceil(scored.length*0.55));
+    const pool = scored.slice(0, poolSize);
+    return pool[Math.floor(Math.random()*pool.length)].m;
+  }
+
+  const ordered = orderMoves(moves);
+  let best=null, bestVal=-INF;
+  let alpha=-INF, beta=INF;
+  let scored = [];
+  for(const m of ordered){
+    const after = applyMove(state, m);
+    let v = minimax(after, Math.max(0,depth-1), alpha, beta, 'blue');
+    v += (Math.random()*2-1)*noise;
+    scored.push({m,v});
+    if(v>bestVal){ bestVal=v; best=m; }
+    if(bestVal>alpha) alpha=bestVal;
+  }
+  return best;
+}
+
+/* ============================================================
+   RENDERING
+   ============================================================ */
+const boardEl = document.getElementById('board');
+const turnBanner = document.getElementById('turn-banner');
+const capturedByBlueEl = document.getElementById('captured-by-blue');
+const capturedByRedEl = document.getElementById('captured-by-red');
+const movelistEmptyEl = document.getElementById('movelist-empty');
+const movelistTableEl = document.getElementById('movelist-table');
+const movelistPanelEl = document.getElementById('movelist-panel');
+const analysisControlsEl = document.getElementById('analysis-controls');
+const analysisHintEl = document.getElementById('analysis-hint');
+const analysisClassificationEl = document.getElementById('analysis-classification');
+const anIndexEl = document.getElementById('an-index');
+const anTotalEl = document.getElementById('an-total');
+const backToResultRowEl = document.getElementById('back-to-result-row');
+const promoPopoverEl = document.getElementById('promo-popover');
+const botClockEl = document.getElementById('bot-clock');
+const playerClockEl = document.getElementById('player-clock');
+const botEloBadgeEl = document.getElementById('bot-elo-badge');
+const playerEloBadgeEl = document.getElementById('player-elo-badge');
+
+function buildBoardDOM(){
+  boardEl.innerHTML = '';
+  for(let r=0;r<8;r++){
+    for(let c=0;c<8;c++){
+      const sq = document.createElement('div');
+      sq.className = 'square hoverable ' + (((r+c)%2===0) ? 'light':'dark');
+      sq.dataset.r = r; sq.dataset.c = c;
+      if(c===0){
+        const rl = document.createElement('div');
+        rl.className='coord-label rank-label'; rl.textContent = rankChar(r);
+        sq.appendChild(rl);
+      }
+      if(r===7){
+        const fl = document.createElement('div');
+        fl.className='coord-label file-label'; fl.textContent = fileChar(c);
+        sq.appendChild(fl);
+      }
+      sq.addEventListener('click', onSquareClick);
+      boardEl.appendChild(sq);
+    }
+  }
+  boardEl.appendChild(promoPopoverEl);
+}
+
+function renderBoard(){
+  boardEl.querySelectorAll('.piece, .dot-marker').forEach(el=>el.remove());
+  boardEl.querySelectorAll('.square').forEach(sq=>{
+    sq.classList.remove('selected','last-move','in-check','premove-from','premove-to');
+  });
+
+  const board = game.board;
+  for(let r=0;r<8;r++){
+    for(let c=0;c<8;c++){
+      const p = board[r][c];
+      if(!p) continue;
+      const el = document.createElement('div');
+      el.className = 'piece ' + p.color + ((p.color==='blue' && !analysisMode && !game.gameOver) ? ' selectable' : '');
+      el.innerHTML = pieceImgHTML(p.color, p.type);
+      positionPiece(el, r, c);
+      el.dataset.r = r; el.dataset.c = c;
+      el.addEventListener('click', onPieceClick);
+      boardEl.appendChild(el);
+    }
+  }
+
+  if(game.lastMove){
+    const fromSq = squareEl(game.lastMove.from.r, game.lastMove.from.c);
+    const toSq = squareEl(game.lastMove.to.r, game.lastMove.to.c);
+    if(fromSq) fromSq.classList.add('last-move');
+    if(toSq) toSq.classList.add('last-move');
+  }
+  if(isInCheck(board, game.turn)){
+    const k = findKing(board, game.turn);
+    if(k){ const sq = squareEl(k.r,k.c); if(sq) sq.classList.add('in-check'); }
+  }
+  if(selectedSquare){
+    const sq = squareEl(selectedSquare.r, selectedSquare.c);
+    if(sq) sq.classList.add('selected');
+    for(const t of legalTargets){
+      const tsq = squareEl(t.to.r, t.to.c);
+      if(tsq){
+        const marker = document.createElement('div');
+        marker.className = 'dot-marker' + (t.captured ? ' capture':'');
+        tsq.appendChild(marker);
+      }
+    }
+  }
+  if(premove){
+    const f = squareEl(premove.from.r, premove.from.c); if(f) f.classList.add('premove-from');
+    const t = squareEl(premove.to.r, premove.to.c); if(t) t.classList.add('premove-to');
+  }
+  renderCaptured(game.capturedByBlue, game.capturedByRed);
+  updateTurnBanner();
+  updateClockDisplay();
+}
+
+function positionPiece(el, r, c){
+  el.style.left = (c*12.5)+'%';
+  el.style.top = (r*12.5)+'%';
+}
+
+function squareEl(r,c){
+  return boardEl.querySelector('.square[data-r="'+r+'"][data-c="'+c+'"]');
+}
+
+function renderCaptured(byBlueList, byRedList){
+  capturedByBlueEl.innerHTML='';
+  capturedByRedEl.innerHTML='';
+  byBlueList.forEach(t=>{
+    const s=document.createElement('span');
+    s.className='cap-piece'; s.style.color='var(--black-piece)'; s.textContent=PIECE_GLYPH[t];
+    capturedByBlueEl.appendChild(s);
+  });
+  byRedList.forEach(t=>{
+    const s=document.createElement('span');
+    s.className='cap-piece'; s.style.color='var(--white-piece)'; s.textContent=PIECE_GLYPH[t];
+    capturedByRedEl.appendChild(s);
+  });
+  const valBlue = byBlueList.reduce((sum,t)=>sum+PIECE_VALUE[t],0);
+  const valRed = byRedList.reduce((sum,t)=>sum+PIECE_VALUE[t],0);
+  const diff = valBlue - valRed;
+  document.querySelectorAll('.material-diff').forEach(e=>e.remove());
+  if(diff>0){
+    const tag=document.createElement('span'); tag.className='material-diff'; tag.textContent='+'+Math.round(diff/100);
+    capturedByBlueEl.appendChild(tag);
+  } else if(diff<0){
+    const tag=document.createElement('span'); tag.className='material-diff'; tag.textContent='+'+Math.round(-diff/100);
+    capturedByRedEl.appendChild(tag);
+  }
+}
+
+function updateTurnBanner(){
+  turnBanner.classList.remove('analysis-turn','bot-turn');
+  if(game.turn==='blue'){
+    turnBanner.textContent = 'Du bist am Zug';
+  } else {
+    turnBanner.textContent = 'Napoleon Bot überlegt...';
+    turnBanner.classList.add('bot-turn');
+  }
+}
+
+/* ---------- Schachuhren ---------- */
+let clockIntervalId = null;
+let lastTickTs = 0;
+
+function formatClock(ms){
+  if(ms===null || ms===undefined) return '\u221E';
+  if(ms<0) ms=0;
+  const totalSec = Math.ceil(ms/1000);
+  const m = Math.floor(totalSec/60);
+  const s = totalSec%60;
+  return m+':'+(s<10?'0':'')+s;
+}
+
+function updateClockDisplay(){
+  botClockEl.textContent = formatClock(game.clockRed);
+  playerClockEl.textContent = formatClock(game.clockBlue);
+  botClockEl.classList.toggle('active', game.turn==='red' && !game.gameOver && !analysisMode);
+  playerClockEl.classList.toggle('active', game.turn==='blue' && !game.gameOver && !analysisMode);
+  botClockEl.classList.toggle('low', game.clockRed!==null && game.clockRed<20000);
+  playerClockEl.classList.toggle('low', game.clockBlue!==null && game.clockBlue<20000);
+}
+
+function startClockTicking(){
+  stopClockTicking();
+  if(game.clockBlue===null){ updateClockDisplay(); return; }
+  lastTickTs = Date.now();
+  clockIntervalId = setInterval(()=>{
+    if(analysisMode || game.gameOver) return;
+    const now = Date.now();
+    const dt = now - lastTickTs;
+    lastTickTs = now;
+    if(game.turn==='blue'){
+      game.clockBlue -= dt;
+      if(game.clockBlue<=0){ game.clockBlue=0; updateClockDisplay(); onTimeout('blue'); return; }
+    } else {
+      game.clockRed -= dt;
+      if(game.clockRed<=0){ game.clockRed=0; updateClockDisplay(); onTimeout('red'); return; }
+    }
+    updateClockDisplay();
+  }, 250);
+}
+function stopClockTicking(){
+  if(clockIntervalId){ clearInterval(clockIntervalId); clockIntervalId=null; }
+}
+function onTimeout(color){
+  if(game.gameOver) return;
+  game.gameOver = true;
+  stopClockTicking();
+  const result = color==='blue' ? 'red_wins_timeout' : 'blue_wins_timeout';
+  setTimeout(()=>showEndScreen(result), 200);
+}
+
+/* ---------- Notation / Zugliste ---------- */
+function renderMoveList(){
+  const plies = snapshots.slice(1);
+  if(plies.length===0){
+    movelistEmptyEl.style.display='block';
+    movelistTableEl.style.display='none';
+    return;
+  }
+  movelistEmptyEl.style.display='none';
+  movelistTableEl.style.display='table';
+  const tbody = movelistTableEl.querySelector('tbody');
+  tbody.innerHTML='';
+  for(let i=0;i<plies.length;i+=2){
+    const moveNum = Math.floor(i/2)+1;
+    const whitePly = plies[i];
+    const blackPly = plies[i+1];
+    const tr = document.createElement('tr');
+
+    const tdNum = document.createElement('td');
+    tdNum.className='num'; tdNum.textContent = moveNum+'.';
+    tr.appendChild(tdNum);
+
+    const tdWhite = document.createElement('td');
+    tdWhite.className='mv';
+    tdWhite.appendChild(document.createTextNode(whitePly ? whitePly.san : ''));
+    if(whitePly){
+      appendClassTag(tdWhite, i+1);
+      tdWhite.dataset.snapIndex = i+1;
+      tdWhite.addEventListener('click', onMoveListClick);
+    }
+    tr.appendChild(tdWhite);
+
+    const tdBlack = document.createElement('td');
+    tdBlack.className='mv';
+    tdBlack.appendChild(document.createTextNode(blackPly ? blackPly.san : ''));
+    if(blackPly){
+      appendClassTag(tdBlack, i+2);
+      tdBlack.dataset.snapIndex = i+2;
+      tdBlack.addEventListener('click', onMoveListClick);
+    }
+    tr.appendChild(tdBlack);
+
+    tbody.appendChild(tr);
+  }
+  highlightActiveMoveRow(snapshots.length-1);
+  movelistPanelEl.scrollTop = movelistPanelEl.scrollHeight;
+}
+
+function appendClassTag(td, snapIndex){
+  const cls = classifications[snapIndex];
+  if(!cls) return;
+  const info = CLASS_INFO[cls];
+  if(!info) return;
+  const tag = document.createElement('span');
+  tag.className='move-tag';
+  tag.style.color = info.color;
+  tag.textContent = info.symbol;
+  tag.title = info.label;
+  td.appendChild(tag);
+}
+
+function highlightActiveMoveRow(snapIndex){
+  movelistTableEl.querySelectorAll('td.mv').forEach(td=>td.classList.remove('active-move'));
+  if(snapIndex<=0) return;
+  const td = movelistTableEl.querySelector('td.mv[data-snap-index="'+snapIndex+'"]');
+  if(td) td.classList.add('active-move');
+}
+
+function onMoveListClick(e){
+  if(!analysisMode) return;
+  const idx = parseInt(e.currentTarget.dataset.snapIndex,10);
+  analysisIndex = idx;
+  renderAnalysisPosition();
+}
+
+/* ============================================================
+   INTERAKTION (inkl. Pre-Moving)
+   ============================================================ */
+function onPieceClick(e){
+  e.stopPropagation();
+  const r = parseInt(e.currentTarget.dataset.r,10);
+  const c = parseInt(e.currentTarget.dataset.c,10);
+  handleSquareInteraction(r,c);
+}
+function onSquareClick(e){
+  const r = parseInt(e.currentTarget.dataset.r,10);
+  const c = parseInt(e.currentTarget.dataset.c,10);
+  handleSquareInteraction(r,c);
+}
+
+function handleSquareInteraction(r,c){
+  if(analysisMode || game.gameOver) return;
+  if(promoPopoverEl.classList.contains('active')) return;
+  if(game.turn==='blue'){
+    if(uiLocked) return;
+    handleOwnTurnInteraction(r,c);
+  } else {
+    handlePremoveInteraction(r,c);
+  }
+}
+
+function handleOwnTurnInteraction(r,c){
+  const piece = game.board[r][c];
+  if(selectedSquare){
+    const target = legalTargets.find(t=>t.to.r===r && t.to.c===c);
+    if(target){
+      performMove(target);
+      return;
+    }
+    if(piece && piece.color==='blue'){
+      selectSquare(r,c);
+    } else {
+      selectedSquare = null; legalTargets = []; renderBoard();
+    }
+    return;
+  }
+  if(piece && piece.color==='blue'){
+    selectSquare(r,c);
+  }
+}
+
+function selectSquare(r,c){
+  ensureAudioCtx();
+  selectedSquare = {r,c};
+  const status = getGameStatus(game);
+  legalTargets = status.legalMoves.filter(m=>m.from.r===r && m.from.c===c);
+  renderBoard();
+}
+
+function handlePremoveInteraction(r,c){
+  ensureAudioCtx();
+  const piece = game.board[r][c];
+  if(selectedSquare){
+    const candidates = getLegalMoves(game,'blue').filter(m=>
+      m.from.r===selectedSquare.r && m.from.c===selectedSquare.c && m.to.r===r && m.to.c===c
+    );
+    if(candidates.length>0){
+      if(candidates.length>1){
+        showPromotionPopover({from:{r:selectedSquare.r,c:selectedSquare.c}, to:{r,c}, color:'blue'}, (pt)=>{
+          premove = candidates.find(cm=>cm.promotion===pt) || candidates[0];
+          selectedSquare=null; legalTargets=[];
+          renderBoard();
+        });
+        return;
+      }
+      premove = candidates[0];
+      selectedSquare = null; legalTargets = [];
+      renderBoard();
+      return;
+    }
+    if(piece && piece.color==='blue'){
+      selectPremoveSquare(r,c);
+    } else {
+      selectedSquare = null; legalTargets = [];
+      renderBoard();
+    }
+    return;
+  }
+  if(piece && piece.color==='blue'){
+    selectPremoveSquare(r,c);
+  } else if(premove){
+    premove = null;
+    renderBoard();
+  }
+}
+
+function selectPremoveSquare(r,c){
+  selectedSquare = {r,c};
+  legalTargets = getLegalMoves(game,'blue').filter(m=>m.from.r===r && m.from.c===c);
+  premove = null;
+  renderBoard();
+}
+
+function tryExecutePremove(){
+  if(!premove || game.gameOver || game.turn!=='blue'){
+    if(premove && (game.gameOver || game.turn!=='blue')){ premove=null; renderBoard(); }
+    return;
+  }
+  const legal = getLegalMoves(game,'blue');
+  const pm = premove;
+  const match = legal.find(m=>
+    m.from.r===pm.from.r && m.from.c===pm.from.c &&
+    m.to.r===pm.to.r && m.to.c===pm.to.c &&
+    (m.promotion||null)===(pm.promotion||null)
+  );
+  premove = null;
+  if(match){
+    setTimeout(()=>{ finalizeMove(match); }, 150);
+  } else {
+    renderBoard();
+  }
+}
+
+function performMove(move){
+  if(move.promotion === undefined && needsPromotionChoice(move)){
+    showPromotionPopover(move, (chosen)=>{
+      finalizeMove(Object.assign({}, move, {promotion:chosen}));
+    });
+    return;
+  }
+  finalizeMove(move);
+}
+
+function needsPromotionChoice(move){
+  const piece = game.board[move.from.r][move.from.c];
+  if(!piece || piece.type!=='p') return false;
+  return move.to.r === promotionRow(piece.color) && !move.promotion;
+}
+
+function showPromotionPopover(move, callback){
+  uiLocked = true;
+  const color = move.color;
+  const row = move.to.r, col = move.to.c;
+  promoPopoverEl.innerHTML = '';
+  promoPopoverEl.style.left = (col*12.5)+'%';
+  if(row===0){
+    promoPopoverEl.style.top = '0%';
+    promoPopoverEl.style.flexDirection = 'column';
+  } else {
+    promoPopoverEl.style.top = 'auto';
+    promoPopoverEl.style.bottom = '0%';
+    promoPopoverEl.style.flexDirection = 'column-reverse';
+  }
+  ['q','r','b','n'].forEach(pt=>{
+    const btn = document.createElement('div');
+    btn.className='promo-choice ' + (color==='blue' ? 'pc-blue' : 'pc-red');
+    btn.innerHTML = pieceImgHTML(color, pt);
+    btn.addEventListener('click', ()=>{
+      promoPopoverEl.classList.remove('active');
+      uiLocked = false;
+      callback(pt);
+    });
+    promoPopoverEl.appendChild(btn);
+  });
+  const cancelBtn = document.createElement('div');
+  cancelBtn.className='promo-cancel';
+  cancelBtn.textContent = '\u2715';
+  cancelBtn.addEventListener('click', ()=>{
+    promoPopoverEl.classList.remove('active');
+    uiLocked = false;
+    selectedSquare = null; legalTargets = [];
+    renderBoard();
+  });
+  promoPopoverEl.appendChild(cancelBtn);
+  promoPopoverEl.classList.add('active');
+}
+
+function finalizeMove(move){
+  selectedSquare = null; legalTargets = [];
+  const preState = game;
+  const preLegal = getLegalMoves(preState, preState.turn);
+  const san = computeSAN(preState, move, preLegal);
+  const wasCapture = !!move.captured;
+
+  game = applyMove(game, move);
+  const finalSan = finalizeSANWithSuffix(san, game);
+  recordPosition(game);
+  snapshots.push({
+    board: cloneBoard(game.board),
+    capturedByBlue: game.capturedByBlue.slice(),
+    capturedByRed: game.capturedByRed.slice(),
+    lastMove: move,
+    san: finalSan,
+    moveColor: move.color,
+    turn: game.turn,
+    castling: Object.assign({}, game.castling),
+    enPassant: game.enPassant,
+    halfmoveClock: game.halfmoveClock
+  });
+  renderMoveList();
+
+  if(wasCapture) playCaptureSound(); else playMoveSound();
+  if(isInCheck(game.board, game.turn)) setTimeout(playCheckSound, 120);
+
+  renderBoard();
+  checkForGameEnd(()=>{
+    if(!game.gameOver && game.turn==='red'){
+      triggerAIMove();
+    }
+  });
+}
+
+function triggerAIMove(){
+  uiLocked = true;
+  updateTurnBanner();
+  const delay = 500 + Math.random()*700;
+  setTimeout(()=>{
+    const move = chooseAIMove(game);
+    uiLocked = false;
+    if(!move){ return; }
+
+    const preState = game;
+    const preLegal = getLegalMoves(preState, preState.turn);
+    const san = computeSAN(preState, move, preLegal);
+    const wasCapture = !!move.captured;
+
+    game = applyMove(game, move);
+    const finalSan = finalizeSANWithSuffix(san, game);
+    recordPosition(game);
+    snapshots.push({
+      board: cloneBoard(game.board),
+      capturedByBlue: game.capturedByBlue.slice(),
+      capturedByRed: game.capturedByRed.slice(),
+      lastMove: move,
+      san: finalSan,
+      moveColor: move.color,
+      turn: game.turn,
+      castling: Object.assign({}, game.castling),
+      enPassant: game.enPassant,
+      halfmoveClock: game.halfmoveClock
+    });
+    renderMoveList();
+
+    if(wasCapture) playCaptureSound(); else playMoveSound();
+    if(isInCheck(game.board, game.turn)) setTimeout(playCheckSound, 120);
+
+    renderBoard();
+    checkForGameEnd(tryExecutePremove);
+  }, delay);
+}
+
+function checkForGameEnd(cb){
+  const status = getGameStatus(game);
+  const repCount = positionCounts[positionKey(game)] || 0;
+  if(status.over){
+    game.gameOver = true;
+    stopClockTicking();
+    setTimeout(()=>showEndScreen(status.result), 450);
+    return;
+  }
+  if(repCount>=3){
+    game.gameOver = true;
+    stopClockTicking();
+    setTimeout(()=>showEndScreen('draw_repetition'), 450);
+    return;
+  }
+  cb();
+}
+
+/* ============================================================
+   PARTIE-ANALYSE MIT KLASSIFIZIERUNG
+   ============================================================ */
+const CLASS_INFO = {
+  brilliant:  {symbol:'!!', label:'Brillant', color:'var(--brilliant)'},
+  great:      {symbol:'!',  label:'Großartig', color:'var(--great)'},
+  best:       {symbol:'\u2713', label:'Bester Zug', color:'var(--best)'},
+  book:       {symbol:'\u2656', label:'Buchzug', color:'var(--book)'},
+  inaccuracy: {symbol:'?',  label:'Ungenauigkeit', color:'var(--inaccuracy)'},
+  mistake:    {symbol:'?!', label:'Fehler', color:'var(--mistake)'},
+  blunder:    {symbol:'??', label:'Patzer', color:'var(--blunder)'}
+};
+
+function stateFromSnapshot(idx){
+  const s = snapshots[idx];
+  return {
+    board: cloneBoard(s.board),
+    turn: s.turn,
+    botElo: game ? game.botElo : 1000,
+    castling: Object.assign({}, s.castling),
+    enPassant: s.enPassant,
+    halfmoveClock: s.halfmoveClock||0,
+    lastMove: s.lastMove,
+    capturedByBlue: s.capturedByBlue.slice(),
+    capturedByRed: s.capturedByRed.slice(),
+    gameOver:false,
+    clockBlue:null, clockRed:null
+  };
+}
+
+function searchValueForMover(afterState, moverColor, depth){
+  const v = minimax(afterState, depth, -INF, INF, afterState.turn);
+  return moverColor==='red' ? v : -v;
+}
+
+function classifyMove(diff, isBook, isBestMove, margin){
+  if(isBook) return 'book';
+  if(diff<=10){
+    if(isBestMove && margin>=400) return 'brilliant';
+    if(isBestMove && margin>=150) return 'great';
+    return 'best';
+  }
+  if(diff<=50) return 'inaccuracy';
+  if(diff<=150) return 'mistake';
+  return 'blunder';
+}
+
+function analyzeGame(){
+  const D = 2;
+  classifications = new Array(snapshots.length).fill(null);
+  for(let i=1;i<snapshots.length;i++){
+    const beforeState = stateFromSnapshot(i-1);
+    const statusBefore = getGameStatus(beforeState);
+    if(statusBefore.over){ continue; }
+    const moverColor = snapshots[i].moveColor;
+    const legalMoves = statusBefore.legalMoves;
+    const scored = legalMoves.map(m=>{
+      const after = applyMove(beforeState, m);
+      const val = searchValueForMover(after, moverColor, D-1);
+      return {m, val};
+    });
+    scored.sort((a,b)=>b.val-a.val);
+    const bestVal = scored[0].val;
+    const secondVal = scored.length>1 ? scored[1].val : bestVal;
+    const playedMove = snapshots[i].lastMove;
+    let playedEntry = scored.find(s=>
+      s.m.from.r===playedMove.from.r && s.m.from.c===playedMove.from.c &&
+      s.m.to.r===playedMove.to.r && s.m.to.c===playedMove.to.c &&
+      (s.m.promotion||null)===(playedMove.promotion||null)
+    );
+    const playedVal = playedEntry ? playedEntry.val : searchValueForMover(applyMove(beforeState, playedMove), moverColor, D-1);
+    const diff = Math.max(0, bestVal - playedVal);
+    const isBestMove = !!playedEntry && playedEntry.val >= bestVal-1;
+    const margin = bestVal - secondVal;
+    const isBook = (i<=6 && diff<=20);
+    classifications[i] = classifyMove(diff, isBook, isBestMove, margin);
+  }
+  renderMoveList();
+}
+
+function enterAnalysisMode(){
+  analysisMode = true;
+  analysisIndex = snapshots.length-1;
+  uiLocked = true;
+  selectedSquare = null; legalTargets = []; premove = null;
+  analysisControlsEl.classList.add('active');
+  analysisHintEl.style.display = 'block';
+  analysisClassificationEl.style.display = 'block';
+  backToResultRowEl.style.display = 'flex';
+  showScreen(gameScreen);
+  stopClockTicking();
+  renderAnalysisPosition();
+}
+
+function exitAnalysisMode(){
+  analysisMode = false;
+  analysisControlsEl.classList.remove('active');
+  analysisHintEl.style.display = 'none';
+  analysisClassificationEl.style.display = 'none';
+  backToResultRowEl.style.display = 'none';
+}
+
+function renderAnalysisPosition(){
+  const snap = snapshots[analysisIndex];
+  boardEl.querySelectorAll('.piece, .dot-marker').forEach(el=>el.remove());
+  boardEl.querySelectorAll('.square').forEach(sq=>{
+    sq.classList.remove('selected','last-move','in-check','premove-from','premove-to');
+  });
+  for(let r=0;r<8;r++){
+    for(let c=0;c<8;c++){
+      const p = snap.board[r][c];
+      if(!p) continue;
+      const el = document.createElement('div');
+      el.className = 'piece ' + p.color;
+      el.innerHTML = pieceImgHTML(p.color, p.type);
+      positionPiece(el, r, c);
+      boardEl.appendChild(el);
+    }
+  }
+  if(snap.lastMove){
+    const fromSq = squareEl(snap.lastMove.from.r, snap.lastMove.from.c);
+    const toSq = squareEl(snap.lastMove.to.r, snap.lastMove.to.c);
+    if(fromSq) fromSq.classList.add('last-move');
+    if(toSq) toSq.classList.add('last-move');
+  }
+  const turnToMove = snap.turn || 'blue';
+  if(isInCheck(snap.board, turnToMove)){
+    const k = findKing(snap.board, turnToMove);
+    if(k){ const sq = squareEl(k.r,k.c); if(sq) sq.classList.add('in-check'); }
+  }
+  renderCaptured(snap.capturedByBlue||[], snap.capturedByRed||[]);
+
+  turnBanner.classList.remove('bot-turn');
+  turnBanner.classList.add('analysis-turn');
+  turnBanner.textContent = analysisIndex===0 ? 'Analyse: Ausgangsstellung' : ('Analyse: '+snap.san);
+
+  const cls = classifications[analysisIndex];
+  if(cls && CLASS_INFO[cls]){
+    const info = CLASS_INFO[cls];
+    analysisClassificationEl.style.color = info.color;
+    analysisClassificationEl.textContent = info.symbol + '  ' + info.label;
+  } else {
+    analysisClassificationEl.style.color = 'var(--text-dim)';
+    analysisClassificationEl.textContent = analysisIndex===0 ? 'Ausgangsstellung' : 'Nicht bewertet';
+  }
+
+  anIndexEl.textContent = analysisIndex;
+  anTotalEl.textContent = snapshots.length-1;
+  document.getElementById('an-start').disabled = analysisIndex===0;
+  document.getElementById('an-prev').disabled = analysisIndex===0;
+  document.getElementById('an-next').disabled = analysisIndex===snapshots.length-1;
+  document.getElementById('an-end').disabled = analysisIndex===snapshots.length-1;
+
+  highlightActiveMoveRow(analysisIndex);
+}
+
+document.getElementById('an-start').addEventListener('click', ()=>{ analysisIndex=0; renderAnalysisPosition(); });
+document.getElementById('an-prev').addEventListener('click', ()=>{ if(analysisIndex>0){ analysisIndex--; renderAnalysisPosition(); } });
+document.getElementById('an-next').addEventListener('click', ()=>{ if(analysisIndex<snapshots.length-1){ analysisIndex++; renderAnalysisPosition(); } });
+document.getElementById('an-end').addEventListener('click', ()=>{ analysisIndex=snapshots.length-1; renderAnalysisPosition(); });
+document.getElementById('back-to-result-btn').addEventListener('click', ()=>{
+  showScreen(endScreen);
+});
+document.getElementById('analyze-btn').addEventListener('click', (e)=>{
+  const btn = e.currentTarget;
+  const oldText = btn.textContent;
+  btn.textContent = 'Analysiere...';
+  btn.disabled = true;
+  setTimeout(()=>{
+    analyzeGame();
+    btn.textContent = oldText;
+    btn.disabled = false;
+    enterAnalysisMode();
+  }, 20);
+});
+
+/* ============================================================
+   SCREENS / NAVIGATION
+   ============================================================ */
+const menuScreen = document.getElementById('menu-screen');
+const gameScreen = document.getElementById('game-screen');
+const endScreen = document.getElementById('end-screen');
+
+function showScreen(el){
+  [menuScreen, gameScreen, endScreen].forEach(s=>s.classList.remove('active'));
+  el.classList.add('active');
+}
+
+/* ---------- Menü-Steuerelemente ---------- */
+const menuPlayerEloEl = document.getElementById('menu-player-elo');
+const eloSlider = document.getElementById('elo-slider');
+const botEloValueEl = document.getElementById('bot-elo-value');
+const botTitleTagEl = document.getElementById('bot-title-tag');
+const timeOptionsEl = document.getElementById('time-options');
+
+function refreshMenuElo(){
+  menuPlayerEloEl.textContent = Math.round(playerElo);
+}
+refreshMenuElo();
+
+function refreshEloSliderLabel(){
+  const val = parseInt(eloSlider.value,10);
+  botEloValueEl.textContent = val;
+  botTitleTagEl.textContent = getBotTitle(val);
+  const pct = ((val-100)/(3200-100))*100;
+  eloSlider.style.setProperty('--fill', pct+'%');
+}
+eloSlider.addEventListener('input', refreshEloSliderLabel);
+refreshEloSliderLabel();
+
+timeOptionsEl.querySelectorAll('.time-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    timeOptionsEl.querySelectorAll('.time-btn').forEach(b=>b.classList.remove('selected'));
+    btn.classList.add('selected');
+    timeControlMinutes = parseInt(btn.dataset.min,10);
+  });
+});
+
+document.getElementById('start-btn').addEventListener('click', ()=>{
+  ensureAudioCtx();
+  const elo = parseInt(eloSlider.value,10);
+  startNewGame(elo, timeControlMinutes);
+});
+
+function msFromMinutes(min){
+  return (!min || min<=0) ? null : min*60*1000;
+}
+
+function startNewGame(botElo, minutes){
+  game = newGame(botElo);
+  game.clockBlue = msFromMinutes(minutes);
+  game.clockRed = msFromMinutes(minutes);
+  selectedSquare = null; legalTargets = []; uiLocked = false; premove = null;
+  snapshots = [{
+    board: cloneBoard(game.board),
+    capturedByBlue: [], capturedByRed: [], lastMove:null, san:null, moveColor:null, turn:'blue',
+    castling: Object.assign({}, game.castling), enPassant: null, halfmoveClock: 0
+  }];
+  classifications = [];
+  positionCounts = {};
+  recordPosition(game);
+  exitAnalysisMode();
+  botEloBadgeEl.textContent = botElo + ' Elo';
+  playerEloBadgeEl.textContent = Math.round(playerElo) + ' Elo';
+  buildBoardDOM();
+  renderBoard();
+  renderMoveList();
+  showScreen(gameScreen);
+  startClockTicking();
+}
+
+document.getElementById('back-to-menu-btn').addEventListener('click', ()=>{
+  exitAnalysisMode();
+  stopClockTicking();
+  refreshMenuElo();
+  showScreen(menuScreen);
+});
+document.getElementById('end-to-menu-btn').addEventListener('click', ()=>{
+  exitAnalysisMode();
+  refreshMenuElo();
+  showScreen(menuScreen);
+});
+document.getElementById('rematch-btn').addEventListener('click', ()=>{
+  startNewGame(game.botElo, timeControlMinutes);
+});
+
+const resultTextEl = document.getElementById('result-text');
+const flavorTextEl = document.getElementById('flavor-text');
+const eloDeltaEl = document.getElementById('elo-delta');
+const newEloValueEl = document.getElementById('new-elo-value');
+
+/* ---------- Konfetti-Effekt ---------- */
+const confettiCanvas = document.getElementById('confetti-canvas');
+const confettiCtx = confettiCanvas.getContext('2d');
+const CONFETTI_COLORS = ['#81b64c','#a3d16c','#f0c94a','#e05a52','#5c9bd6','#f7f7f4','#26c2a3'];
+let confettiParticles = [];
+let confettiRafId = null;
+let confettiStartTime = 0;
+const CONFETTI_DURATION = 3600;
+
+function resizeConfettiCanvas(){
+  confettiCanvas.width = window.innerWidth;
+  confettiCanvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resizeConfettiCanvas);
+
+function launchConfetti(){
+  resizeConfettiCanvas();
+  const w = confettiCanvas.width;
+  const count = 160;
+  confettiParticles = [];
+  for(let i=0;i<count;i++){
+    confettiParticles.push({
+      x: Math.random()*w,
+      y: -20 - Math.random()*300,
+      w: 6+Math.random()*6,
+      h: 8+Math.random()*8,
+      color: CONFETTI_COLORS[Math.floor(Math.random()*CONFETTI_COLORS.length)],
+      vy: 2.2+Math.random()*2.6,
+      vx: (Math.random()-0.5)*2.2,
+      rot: Math.random()*Math.PI*2,
+      vrot: (Math.random()-0.5)*0.25,
+      sway: Math.random()*Math.PI*2,
+      swaySpeed: 0.02+Math.random()*0.03
+    });
+  }
+  confettiStartTime = performance.now();
+  if(confettiRafId) cancelAnimationFrame(confettiRafId);
+  confettiRafId = requestAnimationFrame(stepConfetti);
+}
+
+function stepConfetti(now){
+  const elapsed = now - confettiStartTime;
+  confettiCtx.clearRect(0,0,confettiCanvas.width, confettiCanvas.height);
+  const fadeStart = CONFETTI_DURATION - 700;
+  const alpha = elapsed>fadeStart ? Math.max(0, 1-((elapsed-fadeStart)/700)) : 1;
+  confettiParticles.forEach(p=>{
+    p.sway += p.swaySpeed;
+    p.x += p.vx + Math.sin(p.sway)*1.1;
+    p.y += p.vy;
+    p.rot += p.vrot;
+    confettiCtx.save();
+    confettiCtx.globalAlpha = alpha;
+    confettiCtx.translate(p.x, p.y);
+    confettiCtx.rotate(p.rot);
+    confettiCtx.fillStyle = p.color;
+    confettiCtx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
+    confettiCtx.restore();
+  });
+  if(elapsed < CONFETTI_DURATION){
+    confettiRafId = requestAnimationFrame(stepConfetti);
+  } else {
+    confettiCtx.clearRect(0,0,confettiCanvas.width, confettiCanvas.height);
+    confettiRafId = null;
+  }
+}
+
+function showEndScreen(result){
+  let text, cls, flavor, score;
+  if(result==='blue_wins_checkmate'){
+    text='Sieg!'; cls='win'; score=1;
+    flavor='"Unglaublich... Ich, Napoleon, geschlagen? Dies wird man in den Annalen vermerken."';
+  } else if(result==='red_wins_checkmate'){
+    text='Niederlage'; cls='lose'; score=0;
+    flavor='"Die Kriegskunst, mein Freund, erlernt man nicht an einem Tage."';
+  } else if(result==='blue_wins_timeout'){
+    text='Sieg (Zeit)'; cls='win'; score=1;
+    flavor='"Napoleon hat die Zeit verschlafen. Der Sieg gehört Euch."';
+  } else if(result==='red_wins_timeout'){
+    text='Niederlage (Zeit)'; cls='lose'; score=0;
+    flavor='"Die Zeit ist ein gnadenloser Feldherr. Eure Uhr lief ab."';
+  } else if(result==='stalemate'){
+    text='Patt'; cls='draw'; score=0.5;
+    flavor='"Ein Patt, wie eine Schlacht ohne Sieger. Ehrenvoll für uns beide."';
+  } else if(result==='draw_repetition'){
+    text='Unentschieden'; cls='draw'; score=0.5;
+    flavor='"Dreimal dieselbe Stellung – ein ewiger Kreislauf. Der Kaiser akzeptiert das Remis."';
+  } else if(result==='draw_50move'){
+    text='Unentschieden'; cls='draw'; score=0.5;
+    flavor='"Fünfzig Züge ohne Entscheidung. Selbst der Kaiser weiß, wann eine Schlacht ruht."';
+  } else if(result==='draw_material'){
+    text='Unentschieden'; cls='draw'; score=0.5;
+    flavor='"Zu wenig Streitkräfte für einen Sieg. Ein stiller Waffenstillstand."';
+  } else {
+    text='Unentschieden'; cls='draw'; score=0.5;
+    flavor='"Ein Waffenstillstand. Der Kaiser begnügt sich heute mit einem Remis."';
+  }
+  resultTextEl.textContent = text;
+  resultTextEl.className = 'result-text ' + cls;
+  flavorTextEl.textContent = flavor;
+
+  const {newElo, delta} = computeEloUpdate(playerElo, game.botElo, score);
+  playerElo = newElo;
+  savePlayerElo(playerElo);
+  newEloValueEl.textContent = Math.round(playerElo);
+  eloDeltaEl.textContent = (delta>=0?'+':'') + delta;
+  eloDeltaEl.className = delta>=0 ? 'delta-pos' : 'delta-neg';
+
+  exitAnalysisMode();
+  stopClockTicking();
+  playGameEndSound(score===1);
+  showScreen(endScreen);
+  if(score===1){ launchConfetti(); }
+}
+
+/* ---------- Sound-Umschalter ---------- */
+const soundToggleBtn = document.getElementById('sound-toggle-btn');
+soundToggleBtn.addEventListener('click', ()=>{
+  soundEnabled = !soundEnabled;
+  soundToggleBtn.textContent = soundEnabled ? '\u{1F50A} Klang: An' : '\u{1F507} Klang: Aus';
+  if(soundEnabled) ensureAudioCtx();
+});
+
+})();
+</script>
+</body>
+</html>
